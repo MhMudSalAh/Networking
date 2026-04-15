@@ -13,7 +13,7 @@ It simplifies making API requests, handling responses, and managing errors in iO
 
 ## Installation
 
-- 1. Create config file by set base_url = "https://example.com/api/"
+- 1. Create xcconfig file then write this line `base_url = "https:/$()/example.com/api/"` in it.
 - 2. Add new property in info.plist:
      <key>`BaseURL`</key>
      <string>`$(base_url)`</string>
