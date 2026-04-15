@@ -15,5 +15,5 @@ It simplifies making API requests, handling responses, and managing errors in iO
 
 - 1. Create config file by set base_url = "https://example.com/api/"
 - 2. Add new property in info.plist:
-     <key>BaseURL</key>
-     <string>$(base_url)</string>
+     <key>`BaseURL`</key>
+     <string>`$(base_url)`</string>
