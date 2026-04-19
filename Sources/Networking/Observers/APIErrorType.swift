@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum APIErrorType {
+public enum APIErrorType {
     case network
     case server
     case noResponse
