@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct APIError: Error {
+public struct APIError: Error {
     var code: Int?
     var message: String?
     var type: APIErrorType?
