@@ -27,7 +27,7 @@ public final class URLSessionProvider: URLSessionProviderProtocol {
         } ?? .default
     }
     
-    func request<T: Decodable>(service: ServiceProtocol) async -> Result<T, APIError> {
+    public func request<T: Decodable>(service: ServiceProtocol) async -> Result<T, APIError> {
         let request = URLRequest(
             service: service,
             cachePolicy: urlCachePolicy(service.urlCachePolicy),
