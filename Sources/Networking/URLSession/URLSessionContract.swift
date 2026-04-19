@@ -8,5 +8,5 @@
 import Foundation
 
 public protocol URLSessionProviderProtocol {
-    func request<T: Decodable>(service: ServiceProtocol) async -> Result<T, APIError>
+    public func request<T: Decodable>(service: ServiceProtocol) async -> Result<T, APIError>
 }
