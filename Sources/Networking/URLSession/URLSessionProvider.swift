@@ -10,9 +10,21 @@ import Foundation
 public final class URLSessionProvider: URLSessionProviderProtocol {
     
     private var session: URLSessionProtocol
+    private var decoder: JSONDecoder
     
-    public init(session: URLSessionProtocol = URLSession.shared) {
+    public init(
+        session: URLSessionProtocol = URLSession.shared,
+        dateFormat: String? = nil
+    ) {
         self.session = session
+        self.decoder = dateFormat.map {
+            let formatter = DateFormatter()
+            formatter.dateFormat = $0
+            let decoder = JSONDecoder()
+            decoder.keyDecodingStrategy = .convertFromSnakeCase
+            decoder.dateDecodingStrategy = .formatted(formatter)
+            return decoder
+        } ?? .default
     }
     
     func request<T: Decodable>(service: ServiceProtocol) async -> Result<T, APIError> {
