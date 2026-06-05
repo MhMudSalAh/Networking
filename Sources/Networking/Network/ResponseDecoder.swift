@@ -22,7 +22,10 @@ public struct ResponseDecoder: Sendable {
         } ?? .default
     }
     
-    func decode<T: Decodable>(_ type: T.Type, from data: Data) -> Result<T, APIError> {
+    func decode<T: Decodable>(
+        _ type: T.Type,
+        from data: Data
+    ) -> Result<T, APIError> {
         do {
             return .success(try decoder.decode(type, from: data))
         } catch let error as DecodingError {
@@ -34,30 +37,42 @@ public struct ResponseDecoder: Sendable {
     
     private func mapDecodingError(_ error: DecodingError) -> APIError {
         switch error {
-        case .typeMismatch(let type, let context):
-            return APIError(type: .parsing, parsingDetail: .init(
-                expectedType: String(describing: type),
-                keyPath: context.codingPath.keyPathString,
-                debugDescription: context.debugDescription
-            ))
-        case .valueNotFound(let type, let context):
-            return APIError(type: .parsing, parsingDetail: .init(
-                expectedType: String(describing: type),
-                keyPath: context.codingPath.keyPathString,
-                debugDescription: context.debugDescription
-            ))
-        case .keyNotFound(let key, let context):
-            return APIError(type: .parsing, parsingDetail: .init(
-                expectedType: "Optional",
-                keyPath: key.stringValue,
-                debugDescription: "Key '\(key.stringValue)' not found — \(context.debugDescription)"
-            ))
-        case .dataCorrupted(let context):
-            return APIError(type: .parsing, parsingDetail: .init(
-                expectedType: "JSON",
-                keyPath: context.codingPath.keyPathString,
-                debugDescription: context.debugDescription
-            ))
+        case let .typeMismatch(type, context):
+            return APIError(
+                type: .parsing,
+                parsing: .init(
+                    expectedType: String(describing: type),
+                    keyPath: context.codingPath.keyPathString,
+                    debugDescription: context.debugDescription
+                )
+            )
+        case let .valueNotFound(type, context):
+            return APIError(
+                type: .parsing,
+                parsing: .init(
+                    expectedType: String(describing: type),
+                    keyPath: context.codingPath.keyPathString,
+                    debugDescription: context.debugDescription
+                )
+            )
+        case let .keyNotFound(key, context):
+            return APIError(
+                type: .parsing,
+                parsing: .init(
+                    expectedType: "Optional",
+                    keyPath: key.stringValue,
+                    debugDescription: "Key '\(key.stringValue)' not found — \(context.debugDescription)"
+                )
+            )
+        case let .dataCorrupted(context):
+            return APIError(
+                type: .parsing,
+                parsing: .init(
+                    expectedType: "JSON",
+                    keyPath: context.codingPath.keyPathString,
+                    debugDescription: context.debugDescription
+                )
+            )
         @unknown default:
             return APIError(type: .parsing)
         }

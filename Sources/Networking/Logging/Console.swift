@@ -29,11 +29,11 @@ public class Console {
             LOG("❌ Server State", "🔥 Error:- \(error?.message ?? "")")
         }
         
-        if let type = error?.type {
-            LOG("🔥 API Error", type == .parsing ? "💥 \(type)" : type)
+        if let type = error?.type?.rawValue {
+            LOG("🔥 API Error", "💥 \(type)")
         }
         
-        if let parsing = error?.parsingDetail {
+        if let parsing = error?.parsing {
             print("   📍 Key Path: \(parsing.keyPath)")
             print("   ⚠️ Expected: \(parsing.expectedType)")
 //            print("   📋 Description : \(parsing.debugDescription)")

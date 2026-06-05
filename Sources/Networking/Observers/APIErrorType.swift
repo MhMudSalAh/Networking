@@ -7,12 +7,25 @@
 
 import Foundation
 
-public enum APIErrorType: Sendable {
-    case network
-    case server
-    case noResponse
-    case noData
-    case parsing
-    case unAuthorized
-    case unknown
+public enum APIErrorType: String, Sendable {
+    case network = "Network"
+    case server = "Server"
+    case notFound = "Not Found"
+    case noResponse = "No Response"
+    case noData = "No Data"
+    case parsing = "Parsing"
+    case unAuthorized = "Un Authorized"
+    case client = "Client"
+    case unknown = "Unknown"
+    case badUrl = "Bad URL"
+    case methodNotAllowed = "Method Not Allowed"
+    
+    var isRepeat: Bool {
+        switch self {
+        case .network, .noResponse:
+            return true
+        default:
+            return false
+        }
+    }
 }

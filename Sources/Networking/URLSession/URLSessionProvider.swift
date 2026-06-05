@@ -80,12 +80,47 @@ public actor URLSessionProvider: URLSessionProviderProtocol {
             case 401:
                 apiError = APIError(type: .unAuthorized)
                 return .failure(apiError!)
+            case 404:
+                apiError = APIError(type: .notFound)
+                return .failure(apiError!)
+            case 405:
+                apiError = APIError(code: response.statusCode, type: .methodNotAllowed)
+                return .failure(apiError!)
+            case 400, 402, 403, 406...499:
+                apiError = APIError(code: response.statusCode, type: .client)
+                return .failure(apiError!)
+            case 500...599:
+                apiError = APIError(code: response.statusCode, type: .server)
+                return .failure(apiError!)
             default:
                 apiError = APIError(type: .unknown)
                 return .failure(apiError!)
             }
+        } catch let error as URLError {
+            switch error.code {
+            case .notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost, .cannotConnectToHost:
+                apiError = APIError(
+                    message: error.localizedDescription,
+                    type: .network
+                )
+            case .badURL, .unsupportedURL:
+                apiError = APIError(
+                    message: error.localizedDescription,
+                    type: .badUrl
+                )
+            default:
+                apiError = APIError(
+                    message: error.localizedDescription,
+                    type: .network
+                )
+            }
+            return .failure(apiError!)
+            
         } catch {
-            apiError = APIError(message: error.localizedDescription, type: .unknown)
+            apiError = APIError(
+                message: error.localizedDescription,
+                type: .unknown
+            )
             return .failure(apiError!)
         }
     }
