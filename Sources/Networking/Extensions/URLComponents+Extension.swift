@@ -16,8 +16,8 @@ extension URLComponents {
         var items: [URLQueryItem] = []
 
         if let parameters = service.parameters {
-            items += parameters.map {
-                URLQueryItem(name: $0.key, value: "\($0.value)")
+            items += parameters.map { key, value in
+                URLQueryItem(name: key, value: String(describing: value))
             }
         }
 

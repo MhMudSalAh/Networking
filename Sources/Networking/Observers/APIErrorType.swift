@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum APIErrorType {
+public enum APIErrorType: Sendable {
     case network
     case server
     case noResponse

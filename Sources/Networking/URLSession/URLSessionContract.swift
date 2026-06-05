@@ -7,6 +7,6 @@
 
 import Foundation
 
-public protocol URLSessionProviderProtocol {
+public protocol URLSessionProviderProtocol: Sendable {
     func request<T: Decodable>(service: ServiceProtocol) async -> Result<T, APIError>
 }

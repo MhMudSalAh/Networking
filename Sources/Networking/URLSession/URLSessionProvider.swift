@@ -7,43 +7,44 @@
 
 import Foundation
 
-public final class URLSessionProvider: URLSessionProviderProtocol {
+import Foundation
+
+public actor URLSessionProvider: URLSessionProviderProtocol {
     
-    private var session: URLSessionProtocol
-    private var decoder: JSONDecoder
+    private let session: URLSessionProtocol
+    private let requestBuilder: RequestBuilder
+    private let decoder: ResponseDecoder
+    
+    #if DEBUG
+    private let logger: NetworkLogger
+    #endif
     
     public init(
         session: URLSessionProtocol = URLSession.shared,
         dateFormat: String? = nil
     ) {
         self.session = session
-        self.decoder = dateFormat.map {
-            let formatter = DateFormatter()
-            formatter.dateFormat = $0
-            let decoder = JSONDecoder()
-            decoder.keyDecodingStrategy = .convertFromSnakeCase
-            decoder.dateDecodingStrategy = .formatted(formatter)
-            return decoder
-        } ?? .default
+        self.requestBuilder = RequestBuilder()
+        self.decoder = ResponseDecoder(dateFormat: dateFormat)
+        
+        #if DEBUG
+        self.logger = NetworkLogger()
+        #endif
     }
     
-    public func request<T: Decodable>(service: ServiceProtocol) async -> Result<T, APIError> {
-        let request = URLRequest(
-            service: service,
-            cachePolicy: urlCachePolicy(service.urlCachePolicy),
-            timeoutInterval: service.timeInterval
-        )
+    public func request<T: Decodable & Sendable>(service: ServiceProtocol) async -> Result<T, APIError> {
+        let request = await requestBuilder.build(from: service)
         var apiError: APIError?
-        let startTime = DispatchTime.now().uptimeNanoseconds
+        let start = ContinuousClock.now
         var task: (data: Data, response: URLResponse)?
         
         #if DEBUG
         defer {
-            info(
+            logger.log(
                 request: request,
                 data: task?.data,
                 response: task?.response,
-                time: responseDuration(startTime),
+                start: start,
                 error: apiError
             )
         }
@@ -64,11 +65,18 @@ public final class URLSessionProvider: URLSessionProviderProtocol {
             
             switch response.statusCode {
             case 200...299:
-                guard let model = try? JSONDecoder().decode(T.self, from: data) else {
-                    apiError = APIError(type: .parsing)
-                    return .failure(apiError!)
+                let decodeResult: Result<T, APIError> = await Task.detached(priority: .userInitiated) {
+                    self.decoder.decode(T.self, from: data)
+                }.value
+                
+                switch decodeResult {
+                case .success(let model):
+                    return .success(model)
+                case .failure(let error):
+                    apiError = error
+                    return .failure(error)
                 }
-                return .success(model)
+                
             case 401:
                 apiError = APIError(type: .unAuthorized)
                 return .failure(apiError!)
@@ -80,47 +88,5 @@ public final class URLSessionProvider: URLSessionProviderProtocol {
             apiError = APIError(message: error.localizedDescription, type: .unknown)
             return .failure(apiError!)
         }
-    }
-    
-    private func urlCachePolicy(_ isCache: Bool) -> URLRequest.CachePolicy {
-        let online = Reachability.isOnline()
-        return isCache ? (online ? .reloadIgnoringCacheData : .returnCacheDataDontLoad) : .reloadIgnoringCacheData
-    }
-    
-    private func responseDuration(_ startTime: UInt64) -> Double {
-        let elapsedNanoseconds = DispatchTime.now().uptimeNanoseconds - startTime
-        return (TimeInterval(elapsedNanoseconds)/1e9).rounded()
-    }
-    
-    private func info(
-        request: URLRequest?,
-        data: Data?,
-        response: URLResponse?,
-        time: TimeInterval,
-        error: APIError?
-    ) {
-        let url = request?.url?.absoluteString
-        let headers = request?.allHTTPHeaderFields
-        
-        let body: String? = {
-            guard let httpBody = request?.httpBody else { return nil }
-            return String(data: httpBody, encoding: .utf8)
-        }()
-        
-        let statusCode = (response as? HTTPURLResponse)?.statusCode
-        let responseString: String? = {
-            guard let data = data else { return nil }
-            return String(data: data, encoding: .utf8)
-        }()
-        
-        Console.logAPI(
-            url: url,
-            headers: headers,
-            body: body,
-            statusCode: statusCode ?? 0,
-            response: responseString,
-            requestTime: time,
-            error: error
-        )
     }
 }

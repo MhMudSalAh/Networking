@@ -7,7 +7,7 @@
 
 import Foundation
 
-public protocol URLSessionProtocol {
+public protocol URLSessionProtocol: Sendable {
     
     typealias DataTaskResult = (Data, URLResponse)
     
