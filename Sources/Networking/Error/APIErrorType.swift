@@ -14,7 +14,7 @@ public enum APIErrorType: String, Sendable {
     case noResponse = "No Response"
     case noData = "No Data"
     case parsing = "Parsing"
-    case unAuthorized = "Un Authorized"
+    case unAuthorized = "UnAuthorized"
     case client = "Client"
     case unknown = "Unknown"
     case badUrl = "Bad URL"
@@ -22,7 +22,7 @@ public enum APIErrorType: String, Sendable {
     
     var isRepeat: Bool {
         switch self {
-        case .network, .noResponse:
+        case .network, .server, .noResponse:
             return true
         default:
             return false

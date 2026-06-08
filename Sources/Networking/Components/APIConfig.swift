@@ -15,12 +15,4 @@ enum APIConfig {
         }
         return url
     }
-
-    static var apiKey: String {
-        guard let key = Bundle.main.object(forInfoDictionaryKey: "APiKey") as? String,
-              !key.isEmpty else {
-            fatalError("Missing API_KEY")
-        }
-        return key
-    }
 }

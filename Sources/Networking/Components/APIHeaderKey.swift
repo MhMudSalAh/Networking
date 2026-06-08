@@ -1,5 +1,5 @@
 //
-//  APIHeader.swift
+//  APIHeaderKey.swift
 //  Networking
 //
 //  Created by MhMuD SalAh on 13/04/2026.
@@ -7,11 +7,12 @@
 
 import Foundation
 
-enum APIHeader: String {
+public enum APIHeaderKey: String {
     case accept = "Accept"
     case contentType = "Content-Type"
+    case contentLength  = "Content-Length"
     case deviceOS = "deviceOs"
     case deviceId = "deviceId"
-    case ios = "ios"
-    case apiKey = "api_key"
+    case authorization  = "Authorization"
+    case acceptLanguage = "Accept-Language"
 }

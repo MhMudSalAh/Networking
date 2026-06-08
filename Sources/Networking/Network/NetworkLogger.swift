@@ -8,9 +8,8 @@
 import Foundation
 
 #if DEBUG
-public struct NetworkLogger: Sendable {
-    
-    public init() {}
+actor NetworkLogger {
+    static let shared = NetworkLogger()
     
     func log(
         request: URLRequest?,
@@ -29,7 +28,7 @@ public struct NetworkLogger: Sendable {
         }()
         
         let duration = duration(from: start)
-        let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+        let statusCode = (response as? HTTPURLResponse)?.statusCode ?? error?.code ?? 0
         let responseString: String? = {
             guard let data = data else { return nil }
             return String(data: data, encoding: .utf8)

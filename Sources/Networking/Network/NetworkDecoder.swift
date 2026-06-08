@@ -1,5 +1,5 @@
 //
-//  ResponseDecoder.swift
+//  NetworkDecoder.swift
 //  Networking
 //
 //  Created by MhMuD SalAh on 05/06/2026.
@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct ResponseDecoder: Sendable {
+public struct NetworkDecoder: Sendable {
     
     nonisolated private let decoder: JSONDecoder
     
@@ -16,9 +16,9 @@ public struct ResponseDecoder: Sendable {
             let formatter = DateFormatter()
             formatter.dateFormat = $0
             formatter.timeZone = TimeZone(secondsFromGMT: 0)
-            let d = JSONDecoder()
-            d.dateDecodingStrategy = .formatted(formatter)
-            return d
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .formatted(formatter)
+            return decoder
         } ?? .default
     }
     
@@ -68,8 +68,8 @@ public struct ResponseDecoder: Sendable {
             return APIError(
                 type: .parsing,
                 parsing: .init(
-                    expectedType: "JSON",
-                    keyPath: context.codingPath.keyPathString,
+                    expectedType: "JSON \(context.debugDescription)",
+                    keyPath: context.codingPath.keyPathString ,
                     debugDescription: context.debugDescription
                 )
             )

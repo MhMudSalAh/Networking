@@ -15,15 +15,19 @@ public protocol ServiceProtocol: Sendable {
     var method: HTTPMethod { get }
     var parameters: Parameters? { get }
     var headers: Headers? { get }
-    var body: Sendable? { get }
-    var timeInterval: TimeInterval { get }
+    var body: (any Encodable & Sendable)? { get }
+    var media: [MediaFile]? { get }
+    var timeInterval: TimeInterval? { get }
     var urlCachePolicy: Bool { get }
+    var repeats: Int? { get }
 }
 
 public extension ServiceProtocol {
     var parameters: Parameters? { nil }
     var headers: Headers? { nil }
-    var body: Sendable? { nil }
-    var timeInterval: TimeInterval { 60.0 }
+    var body: (any Encodable & Sendable)? { nil }
+    var media: [MediaFile]? { nil }
+    var timeInterval: TimeInterval? { nil }
     var urlCachePolicy: Bool { false }
+    var repeats: Int? { nil }
 }

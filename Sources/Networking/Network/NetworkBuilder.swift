@@ -1,5 +1,5 @@
 //
-//  RequestBuilder.swift
+//  NetworkBuilder.swift
 //  Networking
 //
 //  Created by MhMuD SalAh on 05/06/2026.
@@ -7,20 +7,25 @@
 
 import Foundation
 
-public struct RequestBuilder: Sendable {
+public struct NetworkBuilder: Sendable {
     
+    private let configuration: any NetworkConfigProtocol
     private let monitor: NetworkMonitor
     
-    public init(monitor: NetworkMonitor = .shared) {
+    public init(
+        configuration: any NetworkConfigProtocol,
+        monitor: NetworkMonitor = .shared
+    ) {
+        self.configuration = configuration
         self.monitor = monitor
     }
     
     func build(from service: ServiceProtocol) async -> URLRequest {
         let cachePolicy = await cachePolicy(service.urlCachePolicy)
         return URLRequest(
+            configuration: configuration,
             service: service,
-            cachePolicy: cachePolicy,
-            timeoutInterval: service.timeInterval
+            cachePolicy: cachePolicy
         )
     }
     

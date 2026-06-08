@@ -24,7 +24,9 @@ extension URL {
             return [:]
         }
         
-        return Dictionary(queryItems.map { ($0.name, $0.value ?? "") },
-                          uniquingKeysWith: { (_, last) in last })
+        return Dictionary(
+            queryItems.map { ($0.name, $0.value ?? "") },
+            uniquingKeysWith: { (_, last) in last }
+        )
     }
 }

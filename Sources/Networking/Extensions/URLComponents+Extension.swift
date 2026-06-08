@@ -8,24 +8,20 @@
 import Foundation
 
 extension URLComponents {
-
-    init(service: ServiceProtocol) {
+    init(
+        service: ServiceProtocol,
+        configuration: any NetworkConfigProtocol
+    ) {
         let url = APIConfig.baseURL.appendingPathComponent(service.path)
         self.init(url: url, resolvingAgainstBaseURL: false)!
-
-        var items: [URLQueryItem] = []
-
-        if let parameters = service.parameters {
-            items += parameters.map { key, value in
-                URLQueryItem(name: key, value: String(describing: value))
-            }
+        
+        guard service.media?.isEmpty ?? true else { return }
+        
+        var parameters: Parameters? = configuration.parameters
+        service.parameters?.forEach { parameters?[$0.key] = $0.value }
+        
+        queryItems = parameters?.compactMap {
+            URLQueryItem(name: $0.key, value: String(describing: $0.value))
         }
-
-        items.append(URLQueryItem(
-            name: APIHeader.apiKey.rawValue,
-            value: APIConfig.apiKey
-        ))
-
-        self.queryItems = items
     }
 }

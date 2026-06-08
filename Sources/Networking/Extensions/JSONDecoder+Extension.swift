@@ -1,5 +1,5 @@
 //
-//  JSONDecoder.swift
+//  JSONDecoder+Extension.swift
 //  Networking
 //
 //  Created by MhMuD SalAh on 19/04/2026.

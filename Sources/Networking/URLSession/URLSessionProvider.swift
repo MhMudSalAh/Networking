@@ -7,121 +7,44 @@
 
 import Foundation
 
-import Foundation
-
 public actor URLSessionProvider: URLSessionProviderProtocol {
     
-    private let session: URLSessionProtocol
-    private let requestBuilder: RequestBuilder
-    private let decoder: ResponseDecoder
+    private let requestBuilder: NetworkBuilder
+    private let executor: URLSessionExecutor
     
-    #if DEBUG
-    private let logger: NetworkLogger
-    #endif
+    private struct NetworkConfig: NetworkConfigProtocol {}
+    nonisolated(unsafe) private static var _configuration: any NetworkConfigProtocol = NetworkConfig()
+
+    public static func configure(with configuration: any NetworkConfigProtocol) {
+        _configuration = configuration
+    }
     
-    public init(
-        session: URLSessionProtocol = URLSession.shared,
-        dateFormat: String? = nil
-    ) {
-        self.session = session
-        self.requestBuilder = RequestBuilder()
-        self.decoder = ResponseDecoder(dateFormat: dateFormat)
-        
-        #if DEBUG
-        self.logger = NetworkLogger()
-        #endif
+    public init(session: URLSessionProtocol = URLSession.shared) {
+        self.requestBuilder = NetworkBuilder(configuration: Self._configuration)
+        self.executor = URLSessionExecutor(
+            session: session,
+            decoder: NetworkDecoder(dateFormat: Self._configuration.dateFormat)
+        )
     }
     
     public func request<T: Decodable & Sendable>(service: ServiceProtocol) async -> Result<T, APIError> {
         let request = await requestBuilder.build(from: service)
-        var apiError: APIError?
-        let start = ContinuousClock.now
-        var task: (data: Data, response: URLResponse)?
+        let repeats = service.repeats ?? Self._configuration.repeats
+        var attempt = 0
         
-        #if DEBUG
-        defer {
-            logger.log(
-                request: request,
-                data: task?.data,
-                response: task?.response,
-                start: start,
-                error: apiError
-            )
-        }
-        #endif
-        
-        do {
-            task = try await session.dataTask(request: request)
-            
-            guard let response = task?.response as? HTTPURLResponse else {
-                apiError = APIError(type: .noResponse)
-                return .failure(apiError!)
-            }
-            
-            guard let data = task?.data else {
-                apiError = APIError(type: .noData)
-                return .failure(apiError!)
-            }
-            
-            switch response.statusCode {
-            case 200...299:
-                let decodeResult: Result<T, APIError> = await Task.detached(priority: .userInitiated) {
-                    self.decoder.decode(T.self, from: data)
-                }.value
-                
-                switch decodeResult {
-                case .success(let model):
-                    return .success(model)
-                case .failure(let error):
-                    apiError = error
-                    return .failure(error)
+        repeat {
+            let result: Result<T, APIError> = await executor.execute(request)
+            switch result {
+            case .success:
+                return result
+            case .failure(let error):
+                guard attempt < repeats,
+                      error.type?.isRepeat == true else {
+                    return result
                 }
-                
-            case 401:
-                apiError = APIError(type: .unAuthorized)
-                return .failure(apiError!)
-            case 404:
-                apiError = APIError(type: .notFound)
-                return .failure(apiError!)
-            case 405:
-                apiError = APIError(code: response.statusCode, type: .methodNotAllowed)
-                return .failure(apiError!)
-            case 400, 402, 403, 406...499:
-                apiError = APIError(code: response.statusCode, type: .client)
-                return .failure(apiError!)
-            case 500...599:
-                apiError = APIError(code: response.statusCode, type: .server)
-                return .failure(apiError!)
-            default:
-                apiError = APIError(type: .unknown)
-                return .failure(apiError!)
+                attempt += 1
+                try? await Task.sleep(for: .seconds(pow(2.0, Double(attempt - 1))))
             }
-        } catch let error as URLError {
-            switch error.code {
-            case .notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost, .cannotConnectToHost:
-                apiError = APIError(
-                    message: error.localizedDescription,
-                    type: .network
-                )
-            case .badURL, .unsupportedURL:
-                apiError = APIError(
-                    message: error.localizedDescription,
-                    type: .badUrl
-                )
-            default:
-                apiError = APIError(
-                    message: error.localizedDescription,
-                    type: .network
-                )
-            }
-            return .failure(apiError!)
-            
-        } catch {
-            apiError = APIError(
-                message: error.localizedDescription,
-                type: .unknown
-            )
-            return .failure(apiError!)
-        }
+        } while true
     }
 }
