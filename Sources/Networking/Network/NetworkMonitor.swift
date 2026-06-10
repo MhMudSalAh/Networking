@@ -8,7 +8,7 @@
 import Network
 import Foundation
 
-public enum NetworkStatus: Sendable {
+enum NetworkStatus: Sendable {
     case online(ConnectionType)
     case offline
     
@@ -27,7 +27,7 @@ private actor NetworkState {
     }
 }
 
-public final class NetworkMonitor: Sendable {
+final class NetworkMonitor: Sendable {
     
     public static let shared = NetworkMonitor()
     
@@ -35,17 +35,17 @@ public final class NetworkMonitor: Sendable {
     private let queue: DispatchQueue
     private let state: NetworkState
     
-    public let statusStream: AsyncStream<NetworkStatus>
+    let statusStream: AsyncStream<NetworkStatus>
     private let continuation: AsyncStream<NetworkStatus>.Continuation
     
-    public var isOnline: Bool {
+    var isOnline: Bool {
         get async {
             if case .online = await state.status { return true }
             return false
         }
     }
     
-    public var currentStatus: NetworkStatus {
+    var currentStatus: NetworkStatus {
         get async { await state.status }
     }
     

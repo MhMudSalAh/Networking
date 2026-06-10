@@ -30,40 +30,56 @@ struct URLSessionExecutor: Sendable {
     func execute<T: Decodable & Sendable>(
         _ request: URLRequest
     ) async -> Result<T, APIError> {
-        var apiError: APIError?
+        var error: APIError?
+        var data: Data?
+        var response: URLResponse?
         let start = ContinuousClock.now
-        var task: (data: Data, response: URLResponse)?
         
+        let result: Result<T, APIError> = await performRequest(
+            request: request,
+            error: &error,
+            capturedData: &data,
+            response: &response
+        )
+        
+        #if DEBUG
+        let safeError = error
+        let safeData = data
+        let safeResponse = response
+        
+        await NetworkLogger.shared.log(
+            request: request,
+            data: safeData,
+            response: safeResponse,
+            start: start,
+            error: safeError
+        )
+        #endif
+        
+        return result
+    }
+
+    private func performRequest<T: Decodable & Sendable>(
+        request: URLRequest,
+        error: inout APIError?,
+        capturedData: inout Data?,
+        response: inout URLResponse?
+    ) async -> Result<T, APIError> {
         do {
-            task = try await session.dataTask(request: request)
+            let task: (data: Data, response: URLResponse)? = try await session.dataTask(request: request)
+            response = task?.response
             
             guard let response = task?.response as? HTTPURLResponse else {
-                apiError = APIError(type: .noResponse)
-                #if DEBUG
-                await NetworkLogger.shared.log(
-                    request: request,
-                    data: nil,
-                    response: task?.response,
-                    start: start,
-                    error: nil
-                )
-                #endif
-                return .failure(apiError!)
+                error = APIError(type: .noResponse)
+                return .failure(error!)
             }
             
             guard let data = task?.data else {
-                apiError = APIError(type: .noData)
-                #if DEBUG
-                await NetworkLogger.shared.log(
-                    request: request,
-                    data: nil,
-                    response: task?.response,
-                    start: start,
-                    error: nil
-                )
-                #endif
-                return .failure(apiError!)
+                error = APIError(type: .noData)
+                return .failure(error!)
             }
+            
+            capturedData = data
             
             switch response.statusCode {
             case 200...299:
@@ -73,118 +89,52 @@ struct URLSessionExecutor: Sendable {
                 
                 switch decodeResult {
                 case .success(let model):
-                    #if DEBUG
-                    await NetworkLogger.shared.log(
-                        request: request,
-                        data: data,
-                        response: task?.response,
-                        start: start,
-                        error: nil
-                    )
-                    #endif
                     return .success(model)
-                case .failure(let error):
-                    apiError = error
-                    apiError?.code = response.statusCode
-                    #if DEBUG
-                    await NetworkLogger.shared.log(
-                        request: request,
-                        data: data,
-                        response: task?.response,
-                        start: start,
-                        error: apiError
-                    )
-                    #endif
-                    return .failure(error)
+                case .failure(let e):
+                    error = e
+                    error?.code = response.statusCode
+                    return .failure(error!)
                 }
                 
             case 401:
-                apiError = APIError(
-                    code: response.statusCode,
-                    type: .unAuthorized
-                )
+                error = APIError(code: response.statusCode, type: .unAuthorized)
             case 404:
-                apiError = APIError(
-                    code: response.statusCode,
-                    type: .notFound
-                )
+                error = APIError(code: response.statusCode, type: .notFound)
             case 405:
-                apiError = APIError(
-                    code: response.statusCode,
-                    type: .methodNotAllowed
-                )
+                error = APIError(code: response.statusCode, type: .methodNotAllowed)
             case 400, 402, 403, 406...499:
-                apiError = APIError(
-                    code: response.statusCode,
-                    type: .client
-                )
+                error = APIError(code: response.statusCode, type: .client)
             case 500...599:
-                apiError = APIError(
-                    code: response.statusCode,
-                    type: .server
-                )
+                error = APIError(code: response.statusCode, type: .server)
             default:
-                apiError = APIError(
-                    code: response.statusCode,
-                    type: .unknown
-                )
+                error = APIError(code: response.statusCode, type: .unknown)
             }
-            #if DEBUG
-            await NetworkLogger.shared.log(
-                request: request,
-                data: nil,
-                response: task?.response,
-                start: start,
-                error: apiError
-            )
-            #endif
-            return .failure(apiError!)
-        } catch let error as URLError {
-            switch error.code {
+            return .failure(error!)
+        } catch let e as URLError {
+            switch e.code {
             case .notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost, .cannotConnectToHost:
-                apiError = APIError(
-                    code: error.errorCode,
-                    message: error.localizedDescription,
+                error = APIError(
+                    code: e.errorCode,
+                    message: e.localizedDescription,
                     type: .network
                 )
             case .badURL, .unsupportedURL:
-                apiError = APIError(
-                    code: error.errorCode,
-                    message: error.localizedDescription,
+                error = APIError(
+                    code: e.errorCode,
+                    message: e.localizedDescription,
                     type: .badUrl
                 )
             default:
-                apiError = APIError(
-                    code: error.errorCode,
-                    message: error.localizedDescription,
+                error = APIError(
+                    code: e.errorCode,
+                    message: e.localizedDescription,
                     type: .unknown
                 )
             }
-            #if DEBUG
-            await NetworkLogger.shared.log(
-                request: request,
-                data: nil,
-                response: task?.response,
-                start: start,
-                error: apiError
-            )
-            #endif
-            return .failure(apiError!)
-        } catch {
-            apiError = APIError(
-                message: error.localizedDescription,
-                type: .unknown
-            )
-            #if DEBUG
-            await NetworkLogger.shared.log(
-                request: request,
-                data: nil,
-                response: task?.response,
-                start: start,
-                error: apiError
-            )
-            #endif
-            return .failure(apiError!)
+            return .failure(error!)
+        } catch let e {
+            error = APIError(message: e.localizedDescription, type: .unknown)
+            return .failure(error!)
         }
     }
-}
+ }

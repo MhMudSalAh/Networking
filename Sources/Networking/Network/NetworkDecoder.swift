@@ -7,11 +7,11 @@
 
 import Foundation
 
-public struct NetworkDecoder: Sendable {
+struct NetworkDecoder: Sendable {
     
-    nonisolated private let decoder: JSONDecoder
+    private let decoder: JSONDecoder
     
-    public init(dateFormat: String? = nil) {
+    init(dateFormat: String? = nil) {
         self.decoder = dateFormat.map {
             let formatter = DateFormatter()
             formatter.dateFormat = $0

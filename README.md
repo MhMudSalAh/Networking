@@ -60,7 +60,7 @@ Register once in your app entry point:
 struct MyApp: App {
 
     init() {
-        URLSessionProvider.configure(with: AppNetworkConfig())
+        Networking.configure(with: AppNetworkConfig())
     }
     
     var body: some Scene {
@@ -91,16 +91,21 @@ struct MoviesService: ServiceProtocol {
 
 
 ### 3 — Make a request
+Just create type and conform to Repository Protocol
+therefore call provider
 
 ```swift
-let provider = URLSessionProvider()
-let result: Result<MoviesResponse, APIError> = await provider.request(service: MoviesService(page: 1))
-
-switch result {
-case .success(let response):
-    print(response.movies)
-case .failure(let error):
-    print(error.type)
+struct MoviesRepositoryAPI: Repository {
+    
+    func getMovies(page: Int) async -> Result<PageModel<MovieModel>, APIError> {
+        let service = MoviesService(page: page)
+        return await provider.request(service: service)
+    }
+    
+    func getCategories() async -> Result<CategoriesModel, APIError> {
+        let service = CategoriesService()
+        return await provider.request(service: service)
+    }
 }
 ```
 

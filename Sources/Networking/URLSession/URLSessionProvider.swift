@@ -7,19 +7,20 @@
 
 import Foundation
 
-public actor URLSessionProvider: URLSessionProviderProtocol {
+struct URLSessionProvider: URLSessionProviderProtocol {
     
+    static let shared = URLSessionProvider()
     private let requestBuilder: NetworkBuilder
     private let executor: URLSessionExecutor
     
     private struct NetworkConfig: NetworkConfigProtocol {}
     nonisolated(unsafe) private static var _configuration: any NetworkConfigProtocol = NetworkConfig()
 
-    public static func configure(with configuration: any NetworkConfigProtocol) {
+    static func configure(with configuration: any NetworkConfigProtocol) {
         _configuration = configuration
     }
     
-    public init(session: URLSessionProtocol = URLSession.shared) {
+    private init(session: URLSessionProtocol = URLSession.shared) {
         self.requestBuilder = NetworkBuilder(configuration: Self._configuration)
         self.executor = URLSessionExecutor(
             session: session,

@@ -7,7 +7,7 @@
 
 import Foundation
 
-public class Console {
+enum Console {
     
     static func logAPI(
         url: String?,
@@ -28,7 +28,7 @@ public class Console {
             LOG("   📮 Message", error?.message)
             
             if let parsing = error?.parsing {
-                LOG("   📍 Key Path", parsing.keyPath)
+                LOG("   📍 Key", parsing.keyPath)
                 LOG("   ⚠️ Expected", parsing.expectedType)
 //                LOG("   📋 Description", parsing.debugDescription)
             }
@@ -51,16 +51,16 @@ public class Console {
         lineEnd()
     }
         
-    static func LOG(_ tag: String, _ text: Any?) {
+    static private func LOG(_ tag: String, _ text: Any?) {
         guard let text else { return }
         print("\(tag): \(text)")
     }
     
-    static func lineStart() {
+    static private func lineStart() {
         print("\n🛩️🛩️🛩️🛩️🛩️🛩️🛩️🛩️🛩️🛩️🛩️🛩️🛩️🛩️🛩️🛩️🛩️🛩️\n")
     }
     
-    static func lineEnd() {
+    static private func lineEnd() {
         print("\n🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀\n")
     }
 }

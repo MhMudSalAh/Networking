@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct NetworkBuilder: Sendable {
+struct NetworkBuilder: Sendable {
     
     private let configuration: any NetworkConfigProtocol
     private let monitor: NetworkMonitor

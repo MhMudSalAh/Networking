@@ -7,7 +7,7 @@
 
 import Foundation
 
-public protocol URLSessionProtocol: Sendable {
+protocol URLSessionProtocol: Sendable {
     
     typealias DataTaskResult = (Data, URLResponse)
     
@@ -16,7 +16,7 @@ public protocol URLSessionProtocol: Sendable {
 
 extension URLSession: URLSessionProtocol {
     
-    public func dataTask(request: URLRequest) async throws -> DataTaskResult {
+    func dataTask(request: URLRequest) async throws -> DataTaskResult {
         return try await URLSession.shared.data(
             for: request,
             delegate: nil
