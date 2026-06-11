@@ -22,7 +22,19 @@ struct NetworkDecoder: Sendable {
         } ?? .default
     }
     
-    func decode<T: Decodable>(
+    func decode<T: Decodable & Sendable>(
+        data: Data,
+        statusCode: Int
+    ) async -> Result<T, APIError> {
+        guard let error = mapStatusCode(statusCode) else {
+            return await Task.detached(priority: .userInitiated) {
+                self.decodeData(T.self, from: data)
+            }.value
+        }
+        return .failure(error)
+    }
+    
+    private func decodeData<T: Decodable>(
         _ type: T.Type,
         from data: Data
     ) -> Result<T, APIError> {
@@ -32,6 +44,25 @@ struct NetworkDecoder: Sendable {
             return .failure(mapDecodingError(error))
         } catch {
             return .failure(APIError(type: .parsing))
+        }
+    }
+    
+    private func mapStatusCode(_ statusCode: Int) -> APIError? {
+        switch statusCode {
+        case 200...299:
+            nil
+        case 401:
+            APIError(code: statusCode, type: .unAuthorized)
+        case 404:
+            APIError(code: statusCode, type: .notFound)
+        case 405:
+            APIError(code: statusCode, type: .methodNotAllowed)
+        case 400, 402, 403, 406...499:
+            APIError(code: statusCode, type: .client)
+        case 500...599:
+            APIError(code: statusCode, type: .server)
+        default:
+            APIError(code: statusCode, type: .unknown)
         }
     }
     
@@ -73,8 +104,8 @@ struct NetworkDecoder: Sendable {
                     debugDescription: context.debugDescription
                 )
             )
-        @unknown default:
-            return APIError(type: .parsing)
+        default:
+            return APIError(message: error.errorDescription, type: .parsing)
         }
     }
 }

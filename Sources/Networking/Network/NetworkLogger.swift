@@ -11,6 +11,8 @@ import Foundation
 actor NetworkLogger {
     static let shared = NetworkLogger()
     
+    private init () {}
+    
     func log(
         request: URLRequest?,
         data: Data?,

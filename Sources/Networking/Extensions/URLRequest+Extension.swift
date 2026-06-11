@@ -27,8 +27,8 @@ extension URLRequest {
         
         httpMethod = service.method.rawValue
         
-        var headers: Headers? = configuration.headers
-        service.headers?.forEach { headers?[$0.key] = $0.value }
+        var headers: Headers = configuration.headers ?? [:]
+        service.headers?.forEach { headers[$0.key] = $0.value }
         
         if service.method != .GET && service.method != .HEAD &&
            service.method != .OPTIONS && service.method != .TRACE {
@@ -44,16 +44,15 @@ extension URLRequest {
             }
         }
         
-        if headers?.isEmpty == false {
-            headers?.forEach { addValue($0.value, forHTTPHeaderField: $0.key) }
-        }
+        guard !headers.isEmpty else { return }
+        headers.forEach { addValue($0.value, forHTTPHeaderField: $0.key) }
     }
     
     private mutating func setMultipart(
         files: [MediaFile],
         service: ServiceProtocol,
         configuration: any NetworkConfigProtocol,
-        headers: inout Headers?
+        headers: inout Headers
     ) {
         let multipart = MultipartBuilder()
         
@@ -66,16 +65,16 @@ extension URLRequest {
         
         let body = multipart.build(files: files, parameters: parameters)
         
-        headers?[APIHeaderKey.contentType.rawValue] = APIHeaderValue.multipart.rawValue + multipart.boundary
-        headers?[APIHeaderKey.contentLength.rawValue] = "\(body.count)"
+        headers[APIHeaderKey.contentType.rawValue] = APIHeaderValue.multipart.rawValue + multipart.boundary
+        headers[APIHeaderKey.contentLength.rawValue] = "\(body.count)"
         httpBody = body
     }
     
     private mutating func setJSON(
         body: any Encodable & Sendable,
-        headers: inout Headers?
+        headers: inout Headers
     ) {
-        headers?[APIHeaderKey.contentType.rawValue] = APIHeaderValue.applicationJson.rawValue
+        headers[APIHeaderKey.contentType.rawValue] = APIHeaderValue.applicationJson.rawValue
         httpBody = try? JSONEncoder().encode(body)
     }
 }

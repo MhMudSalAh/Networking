@@ -12,5 +12,4 @@ public enum Networking {
     public static func configure(with configuration: any NetworkConfigProtocol) {
         URLSessionProvider.configure(with: configuration)
     }
-
 }

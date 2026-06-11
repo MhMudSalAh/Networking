@@ -17,10 +17,11 @@ extension URLComponents {
         
         guard service.media?.isEmpty ?? true else { return }
         
-        var parameters: Parameters? = configuration.parameters
-        service.parameters?.forEach { parameters?[$0.key] = $0.value }
+        var parameters: Parameters = configuration.parameters ?? [:]
+        service.parameters?.forEach { parameters[$0.key] = $0.value }
         
-        queryItems = parameters?.compactMap {
+        guard !parameters.isEmpty else { return }
+        queryItems = parameters.compactMap {
             URLQueryItem(name: $0.key, value: String(describing: $0.value))
         }
     }

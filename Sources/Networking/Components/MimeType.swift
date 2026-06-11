@@ -16,13 +16,7 @@ public enum MimeType: String, Sendable {
     case pdf  = "application/pdf"
     
     var fileExtension: String {
-        switch self {
-        case .jpeg: return ".jpg"
-        case .png:  return ".png"
-        case .gif:  return ".gif"
-        case .mp4:  return ".mp4"
-        case .mov:  return ".mov"
-        case .pdf:  return ".pdf"
-        }
+        "." + rawValue.split(separator: "/").last!
+            .replacingOccurrences(of: "jpeg", with: "jpg")
     }
 }

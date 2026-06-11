@@ -32,7 +32,6 @@ final class NetworkMonitor: Sendable {
     public static let shared = NetworkMonitor()
     
     private let monitor: NWPathMonitor
-    private let queue: DispatchQueue
     private let state: NetworkState
     
     let statusStream: AsyncStream<NetworkStatus>
@@ -51,7 +50,6 @@ final class NetworkMonitor: Sendable {
     
     private init() {
         monitor = NWPathMonitor()
-        queue = DispatchQueue(label: "NetworkMonitor", qos: .utility)
         state = NetworkState()
         
         var cont: AsyncStream<NetworkStatus>.Continuation!
@@ -79,7 +77,7 @@ final class NetworkMonitor: Sendable {
                 continuation.yield(status)
             }
         }
-        monitor.start(queue: queue)
+        monitor.start(queue: .init(label: "NetworkMonitor", qos: .utility))
     }
         
     deinit {
